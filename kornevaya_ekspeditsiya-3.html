@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Корневая экспедиция — чередующиеся корни</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:#f5f1e8;color:#29251f}
+.app{max-width:1050px;margin:auto;padding:28px 18px 50px}
+header{background:#29251f;color:#fff;border-radius:24px;padding:26px 28px;box-shadow:0 12px 30px #0001}
+h1{margin:0 0 7px;font-size:32px}
+.subtitle{opacity:.82}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+.pill{background:#fff;color:#29251f;padding:9px 14px;border-radius:999px;font-weight:700}
+.screen{margin-top:18px;background:#fff;border-radius:24px;padding:25px;box-shadow:0 8px 25px #0000000d}
+.hidden{display:none}
+.progress{height:10px;background:#eee7dc;border-radius:10px;overflow:hidden;margin:10px 0 22px}
+.bar{height:100%;width:0;background:#7b5cff;transition:.35s}
+h2{margin-top:0}
+.rule{background:#f8f5ef;border-left:5px solid #7b5cff;padding:13px 16px;border-radius:10px;margin:14px 0}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+button{border:0;border-radius:14px;padding:15px 17px;font-size:16px;cursor:pointer;font-weight:700;background:#eee7dc;color:#29251f;transition:.15s}
+button:hover{transform:translateY(-1px);filter:brightness(.98)}
+button.primary{background:#7b5cff;color:#fff}
+button.correct{background:#d8f1dc}
+button.wrong{background:#f8d5d5}
+.feedback{margin-top:18px;padding:16px;border-radius:14px;font-weight:700}
+.good{background:#e3f5e6}.bad{background:#fde5e5}
+.next{margin-top:18px;width:100%}
+.menu{display:flex;gap:10px;flex-wrap:wrap}
+.choice{min-height:75px;text-align:left}
+.choice b{display:block;margin-bottom:4px}
+.final{font-size:19px;line-height:1.5}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#eee7dc;font-size:13px;margin-right:6px}
+@media(max-width:650px){.answers{grid-template-columns:1fr}h1{font-size:25px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<h1>🧭 Корневая экспедиция</h1>
+<div class="subtitle">Миссия: пройти четыре зоны и доказать, что ты умеешь выбирать гласную в чередующихся корнях.</div>
+<div class="stats">
+<span class="pill">⭐ Очки: <span id="score">0</span></span>
+<span class="pill">❤️ Жизни: <span id="lives">3</span></span>
+<span class="pill">🗺️ Зона: <span id="zone">1/3</span></span>
+</div>
+</header>
+
+<div id="start" class="screen">
+<h2>Как играть</h2>
+<p>Тебе предстоит пройти 3 зоны. В каждой — задания по одному из правил. Выбирай ответ и собирай очки.</p>
+<div class="rule"><b>Система:</b> правильный ответ — +100 очков; серия из 3 правильных ответов — ещё +50. Ошибка снимает жизнь. Если жизни закончились, экспедиция завершится.</div>
+<div class="menu">
+<button class="primary" onclick="startGame()">🚀 Начать экспедицию</button>
+</div>
+</div>
+
+<div id="game" class="screen hidden">
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div id="question"></div>
+<div id="answers" class="answers"></div>
+<div id="feedback"></div>
+<button id="next" class="primary next hidden" onclick="nextQuestion()">Следующее задание →</button>
+</div>
+
+<div id="end" class="screen hidden">
+<h2>🏁 Экспедиция завершена!</h2>
+<div id="result" class="final"></div>
+<button class="primary" onclick="location.reload()">🔄 Пройти ещё раз</button>
+</div>
+</div>
+
+<script>
+const zones=[
+{title:"ЗОНА 1 · Лаборатория ударения", intro:"Здесь гласная зависит от ударения. Вспоминай пары КЛАН–КЛОН, ГАР–ГОР, ТВАР–ТВОР, ЗАР–ЗОР.", qs:[
+["Выбери правильный вариант:","загор__лый",["загорелый","загарелый"],0,"В корне ГАР–ГОР без ударения пишется О: загорелый."],
+["Как правильно?","преклон__ние",["прекланение","преклонение"],1,"В корне КЛАН–КЛОН без ударения пишется О: преклонение."],
+["Вставь букву:","з__ря",["а","о"],0,"В корне ЗАР–ЗОР без ударения пишется А: заря."],
+["Найди исключение из правила ЗАР–ЗОР:",["заря","пригарь","зори"],["пригарь","заря"],0,"Пригарь — исключение, как и изгарь, выгарки, утварь."],
+["Выбери правильное слово:","твор__ние",["тварение","творение"],1,"Без ударения в ТВАР–ТВОР пишется О: творение."]
+]},
+{title:"ЗОНА 2 · Суффиксный механизм", intro:"Смотри вправо от корня: суффикс А после корня меняет гласную. Бир–бер, пир–пер, дир–дер и другие.", qs:[
+["Выбери правильную пару:","Я за(бир/бер)аю — я за(бир/бер)у.",["забираю — заберу","забераю — забиру"],0,"Есть суффикс А → И: забираю; без него → Е: заберу."],
+["Вставь буквы:","обд__раю — сд__ру",["и, е","е, и"],0,"Обдираю: после корня есть А; сдеру: суффикса А нет."],
+["Как правильно?","замираю — замер",["да","нет"],0,"Пара МИР–МЕР: замираю — замер."],
+["Выбери правильный вариант:","заж__гаю — заж__г",["и, е","е, и"],0,"ЖИГ(А)–ЖЕГ: зажигаю — зажег."],
+["Что является исключением?","",["сочетание","касание"],0,"Сочетать, сочетание, сочетательный и бракосочетание — исключения."]
+]},
+{title:"ЗОНА 3 · Смысловой детектор", intro:"Здесь нужно понять значение слова: МАК–МОК, РАВН–РОВН, ПЛАВ–ПЛОВ.", qs:[
+["Что означает «обмакнуть хлеб в сметану»?","",["опустить в жидкость","стать мокрым от жидкости"],0,"МАК — опустить в жидкость."],
+["Выбери слово со значением «стать мокрым, напитаться жидкостью»:","",["намокнуть","замочить"],0,"МОК связан со значением «стать мокрым, напитаться жидкостью»: намокнуть."],
+["Вставь пропущенную букву:","ср__внять счёт",["а","о"],0,"РАВН — равный, одинаковый: сравнять счёт."],
+["Вставь пропущенную букву:","выр__внять дорожки",["а","о"],1,"РОВН — ровный, гладкий: выровнять дорожки."],
+["Какое слово является исключением?","",["пловец","поплавок"],0,"ПЛОВ — исключение: пловец и пловчиха. В остальных случаях в безударной позиции пишется ПЛАВ."]
+]}
+];
+
+let zone=0, qi=0, score=0, lives=3, streak=0, answered=false;
+
+function startGame(){
+ document.getElementById('start').classList.add('hidden');
+ document.getElementById('game').classList.remove('hidden');
+ render();
+}
+function render(){
+ answered=false;
+ const z=zones[zone], q=z.qs[qi];
+ document.getElementById('zone').textContent=(zone+1)+"/3";
+ document.getElementById('bar').style.width=((qi/z.qs.length)*100)+"%";
+ document.getElementById('question').innerHTML=`<span class="badge">${z.title}</span><p>${z.intro}</p><h2>${q[0]}</h2>${q[1]?`<div class="rule"><b>${q[1]}</b></div>`:""}`;
+ const a=document.getElementById('answers'); a.innerHTML="";
+ q[2].forEach((x,i)=>{
+   const b=document.createElement('button'); b.className="choice"; b.innerHTML=x;
+   b.onclick=()=>answer(i,b); a.appendChild(b);
+ });
+ document.getElementById('feedback').innerHTML="";
+ document.getElementById('next').classList.add('hidden');
+}
+function answer(i,btn){
+ if(answered)return; answered=true;
+ const q=zones[zone].qs[qi], buttons=[...document.querySelectorAll('.choice')];
+ buttons.forEach(b=>b.disabled=true);
+ if(i===q[3]){
+   score+=100; streak++;
+   if(streak%3===0){score+=50}
+   btn.classList.add('correct');
+   document.getElementById('feedback').className="feedback good";
+   document.getElementById('feedback').innerHTML="✅ Верно! "+q[4]+(streak%3===0?" <b>Бонус за серию: +50!</b>":"");
+ }else{
+   lives--; streak=0; btn.classList.add('wrong');
+   buttons[q[3]].classList.add('correct');
+   document.getElementById('feedback').className="feedback bad";
+   document.getElementById('feedback').innerHTML="❌ Не совсем. "+q[4];
+ }
+ document.getElementById('score').textContent=score;
+ document.getElementById('lives').textContent=lives;
+ document.getElementById('next').classList.remove('hidden');
+ if(lives<=0) document.getElementById('next').textContent="Завершить экспедицию";
+}
+function nextQuestion(){
+ if(lives<=0){finish();return}
+ qi++;
+ if(qi>=zones[zone].qs.length){
+   zone++;
+   qi=0;
+   if(zone>=zones.length){finish();return}
+ }
+ render();
+}
+function finish(){
+ document.getElementById('game').classList.add('hidden');
+ document.getElementById('end').classList.remove('hidden');
+ let rank=score>=1500?"Корневой мастер":score>=1000?"Опытный исследователь":"Стажёр экспедиции";
+ document.getElementById('result').innerHTML=`Ты набрал(а) <b>${score}</b> очков.<br>Твой статус: <b>${rank}</b>.<br><br>Повтори те зоны, где потерял(а) жизни, и попробуй побить свой результат!`;
+}
+</script>
+</body>
+</html>
